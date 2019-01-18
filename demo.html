@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Marble Testing</title>
+<meta name="author" content="(Viktor Pyshnenko)"/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="./reveal.js/css/reveal.css"/>
+
+<link rel="stylesheet" href="./reveal.js/css/theme/solarized.css" id="theme"/>
+
+<link rel="stylesheet" href="./local.css"/>
+<link rel="stylesheet" href="./reveal.js/lib/css/zenburn.css"/>
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = './reveal.js/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
+<meta name="description" content="Org-Reveal Introduction.">
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide" data-background="./images/title_bg.png"><h1 class="title">Marble Testing</h1><h2 class="author">Viktor Pyshnenko</h2><p class="date">Created: 2019-01-18 пт 19:43</p>
+</section>
+<p>
+<a href="http://melpa.org/#/ox-reveal"><object type="image/svg+xml" data="http://melpa.org/packages/ox-reveal-badge.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object></a>
+<a href="http://www.gnu.org/licenses/gpl-3.0.html"><object type="image/svg+xml" data="http://img.shields.io/:license-gpl3-blue.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object></a>
+</p>
+
+
+<section>
+<section id="slide-sec-agenda">
+<h2 id="agenda">Agenda</h2>
+<ul>
+<li>Marble diagrams</li>
+<li>Marble syntax</li>
+<li>Marble testing examples</li>
+<li>Limitations</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-sec-marble_diagram">
+<h2 id="marble_diagram">Marble diagram</h2>
+<p>
+Marble diagrams are a way to visually represent Observables
+</p>
+</section>
+<section id="slide-sec-marble_event">
+<h3 id="marble_event">Events</h3>
+<p>
+Marbles represent values of events being emitted by Observable
+<img src="./images/diagram_events.png" alt="diagram_events.png" />
+</p>
+</section>
+<section id="slide-sec-marble_time_axis">
+<h3 id="marble_time_axis">Time axis</h3>
+<p>
+The passage of time is represented from left to right
+<img src="./images/diagram_time_axis.png" alt="diagram_time_axis.png" />
+</p>
+</section>
+<section id="slide-sec-marble_complete">
+<h3 id="marble_complete">Complete marker</h3>
+<p>
+A vertical line represents the completion of an Observable
+<img src="./images/diagram_complete.png" alt="diagram_complete.png" />
+</p>
+</section>
+<section id="slide-sec-marble_operator">
+<h3 id="marble_operator">Operator</h3>
+<p>
+Box represents operator that transforms an Observable
+<img src="./images/diagram_operator.png" alt="diagram_operator.png" />
+</p>
+</section>
+<section id="slide-sec-marble_error">
+<h3 id="marble_error">Error marker</h3>
+<p>
+Cross sign represents an error emitted by output Observable
+<img src="./images/diagram_error.png" alt="diagram_error.png" />
+</p>
+</section>
+</section>
+<section>
+<section id="slide-sec-notation">
+<h2 id="notation">Notation</h2>
+</section>
+<section id="slide-sec-marble_syntax">
+<h3 id="marble_syntax">Marble Syntax</h3>
+<div class="org-src-container">
+
+<pre><code class="js" >// (dash) simulates the passage of time
+'------'
+
+// (pipe) emit end of stream
+'------|'
+
+// (pound) indicate an error
+'------#'
+
+// (alphanumeric) characters are values being emitted
+'---a--b--c--|'
+'---a--b--#'
+</code></pre>
+</div>
+</section>
+<section id="slide-sec-sync groupings">
+<h3 id="sync groupings">Sync groupings</h3>
+<div class="org-src-container">
+
+<pre><code class="js" >// on frame 2 emit a, b, and c, then on frame 8 complete
+'--(abc)-|'
+
+// on frame 5 emit a and complete
+'-----(a|)'
+</code></pre>
+</div>
+</section>
+<section id="slide-sec-time_progression_syntax">
+<h3 id="time_progression_syntax">Time progression syntax</h3>
+<div class="org-src-container">
+
+<pre><code class="js" >// on frame 0 emit a, on frame 10 emit b, 
+// on frame 10,012 emit c, then on on frame 10,013 complete 
+'a 9ms b 9s c'
+
+// on frame 2 emit a, on frame 150,003 emit b and never complete 
+'--a 2.5m b'
+</code></pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-examples">
+<h2 id="examples">Marble test examples</h2>
+</section>
+<section id="slide-sec-example_map">
+<h3 id="example_map">map</h3>
+<div class="org-src-container">
+
+<pre><code class="js" >const a =   cold("--1--2--|");
+const asub =     "^-------!";
+const expected = "--2--3--|";
+const result = a.map(s =&gt; `${Number(s) + 1}`);
+expectObservable(result).toBe(expected);
+expectSubscriptions(a.subscriptions).toBe(asub);
+</code></pre>
+</div>
+</section>
+<section id="slide-sec-example_concat">
+<h3 id="example_concat">concat</h3>
+<div class="org-src-container">
+
+<pre><code class="js" >const a =   cold("--1--2--|");
+const b =   cold(        "--3--|");
+const asub =     "^-------!";
+const bsub =     "--------^----!";
+const expected = "--1--2----3--|";
+const result = a.concat(b);
+expectObservable(result).toBe(expected);
+expectSubscriptions(a.subscriptions).toBe(asub);
+expectSubscriptions(b.subscriptions).toBe(bsub);
+</code></pre>
+</div>
+</section>
+<section id="slide-sec-example_hot">
+<h3 id="example_hot">Hot Observables</h3>
+<div class="org-src-container">
+
+<pre><code class="js" >const a =   cold("--1--2--|");
+const b =    hot("^----3----4--|");
+const asub =     "^-------!";
+const bsub =     "--------^----!";
+const expected = "--1--2----4--|";
+const result = a.concat(b);
+expectObservable(result).toBe(expected);
+expectSubscriptions(a.subscriptions).toBe(asub);
+expectSubscriptions(b.subscriptions).toBe(bsub);
+</code></pre>
+</div>
+</section>
+<section id="slide-sec-example_sync">
+<h3 id="example_sync">Synchronous Notification</h3>
+<div class="org-src-container">
+
+<pre><code class="js" >const a =   cold("-1-----2----|");
+const b =   cold("-3-----4----|");
+const asub =     "^-----------!";
+const bsub =     "^-----------!";
+const expected = "-(13)--(24)-|";
+const result = a.merge(b);
+expectObservable(result).toBe(expected);
+expectSubscriptions(a.subscriptions).toBe(asub);
+expectSubscriptions(b.subscriptions).toBe(bsub);
+</code></pre>
+</div>
+</section>
+<section id="slide-sec-">
+<h3 id="org5a93d58"><span class="todo TODO">TODO</span> example with time('&#x2013;')</h3>
+</section>
+</section>
+<section>
+<section id="slide-sec-limitation">
+<h2 id="limitation">Limitations</h2>
+</section>
+<section id="slide-sec-limitation_only_async">
+<h3 id="limitation_only_async">Only AsyncScheduler</h3>
+<p>
+You can't directly test RxJS code that consumes Promises
+</p>
+</section>
+<section id="slide-sec-limitation_delay0">
+<h3 id="limitation_delay0">delay(0) forbidden</h3>
+<p>
+You also can't currently assert delays of zero, even with AsyncScheduler, e.g. delay(0)
+</p>
+</section>
+<section id="slide-sec-limitation_sync">
+<h3 id="limitation_sync">Synchronous Notification limitations</h3>
+<ul>
+<li>each of the parenthesis-enclosed groups of values spans four actual frames</li>
+<li>there must be a sufficient number of frames separating the values</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre><code class="js" >const a =   cold("-1-----2----|");
+const b =   cold("-3-----4----|");
+const asub =     "^-----------!";
+const bsub =     "^-----------!";
+const expected = "-(13)--(24)-|";
+const result = a.merge(b);
+expectObservable(result).toBe(expected);
+expectSubscriptions(a.subscriptions).toBe(asub);
+expectSubscriptions(b.subscriptions).toBe(bsub);
+</code></pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-sec-thanks">
+<h2 id="thanks">Thank you</h2>
+</section>
+</section>
+</div>
+</div>
+<p> Created by yjwen. </p>
+<script src="./reveal.js/lib/js/head.min.js"></script>
+<script src="./reveal.js/js/reveal.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: true,
+progress: true,
+history: true,
+center: true,
+slideNumber: 'c',
+rollingLinks: true,
+keyboard: true,
+overview: true,
+width: 1200,
+height: 800,
+margin: 0.10,
+minScale: 0.50,
+maxScale: 2.50,
+
+theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+transition: Reveal.getQueryHash().transition || 'cube', // default/cube/page/concave/zoom/linear/fade/none
+transitionSpeed: 'default',
+multiplex: {
+    secret: '', // null if client
+    id: '', // id, obtained from socket.io server
+    url: '' // Location of socket.io server
+},
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+ { src: './reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: './reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: './reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
+ { src: './reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }]
+});
+</script>
+</body>
+</html>

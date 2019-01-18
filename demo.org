@@ -1,0 +1,211 @@
+#+Title: Marble Testing
+#+Author: Viktor Pyshnenko
+#+Email: viktor.pyshnenko@jivygroup.com
+
+#+OPTIONS: reveal_center:t reveal_progress:t reveal_history:t reveal_control:t
+#+OPTIONS: reveal_rolling_links:t reveal_keyboard:t reveal_overview:t num:nil
+#+OPTIONS: reveal_width:1200 reveal_height:800
+#+OPTIONS: toc:nil
+#+REVEAL_MARGIN: 0.1
+#+REVEAL_MIN_SCALE: 0.5
+#+REVEAL_MAX_SCALE: 2.5
+#+REVEAL_TRANS: cube
+#+REVEAL_THEME: solarized
+#+REVEAL_HLEVEL: 1
+#+REVEAL_HEAD_PREAMBLE: <meta name="description" content="Org-Reveal Introduction.">
+#+REVEAL_POSTAMBLE: <p> Created by yjwen. </p>
+#+REVEAL_PLUGINS: (markdown notes highlight)
+#+REVEAL_EXTRA_CSS: ./local.css
+#+REVEAL_TITLE_SLIDE_BACKGROUND: ./images/title_bg.png
+
+[[http://melpa.org/#/ox-reveal][file:http://melpa.org/packages/ox-reveal-badge.svg]]
+[[http://www.gnu.org/licenses/gpl-3.0.html][http://img.shields.io/:license-gpl3-blue.svg]]
+
+
+* Agenda
+:PROPERTIES:
+:CUSTOM_ID: agenda
+:END:
+- Marble diagrams
+- Marble syntax
+- Marble testing examples
+- Limitations
+
+* Marble diagram
+:PROPERTIES:
+:CUSTOM_ID: marble_diagram
+:END:
+Marble diagrams are a way to visually represent Observables
+** Events
+:PROPERTIES:
+:CUSTOM_ID: marble_event
+:END:
+Marbles represent values of events being emitted by Observable
+[[./images/diagram_events.png]]
+** Time axis
+:PROPERTIES:
+:CUSTOM_ID: marble_time_axis
+:END:
+The passage of time is represented from left to right
+[[./images/diagram_time_axis.png]]
+** Complete marker
+:PROPERTIES:
+:CUSTOM_ID: marble_complete
+:END:
+A vertical line represents the completion of an Observable
+[[./images/diagram_complete.png]]
+** Operator
+:PROPERTIES:
+:CUSTOM_ID: marble_operator
+:END:
+Box represents operator that transforms an Observable
+[[./images/diagram_operator.png]]
+** Error marker
+:PROPERTIES:
+:CUSTOM_ID: marble_error
+:END:
+Cross sign represents an error emitted by output Observable
+[[./images/diagram_error.png]]
+* Notation
+:PROPERTIES:
+:CUSTOM_ID: notation
+:END:
+** Marble Syntax
+:PROPERTIES:
+:CUSTOM_ID: marble_syntax
+:END:
+#+BEGIN_SRC js
+// (dash) simulates the passage of time
+'------'
+
+// (pipe) emit end of stream
+'------|'
+
+// (pound) indicate an error
+'------#'
+
+// (alphanumeric) characters are values being emitted
+'---a--b--c--|'
+'---a--b--#'
+#+END_SRC
+** Sync groupings
+:PROPERTIES:
+:CUSTOM_ID: sync groupings
+:END:
+#+BEGIN_SRC js
+// on frame 2 emit a, b, and c, then on frame 8 complete
+'--(abc)-|'
+
+// on frame 5 emit a and complete
+'-----(a|)'
+#+END_SRC
+** Time progression syntax
+:PROPERTIES:
+:CUSTOM_ID: time_progression_syntax
+:END:
+#+BEGIN_SRC js
+// on frame 0 emit a, on frame 10 emit b, 
+// on frame 10,012 emit c, then on on frame 10,013 complete 
+'a 9ms b 9s c'
+
+// on frame 2 emit a, on frame 150,003 emit b and never complete 
+'--a 2.5m b'
+#+END_SRC
+* Marble test examples
+:PROPERTIES:
+:CUSTOM_ID: examples
+:END:
+** map
+:PROPERTIES:
+:CUSTOM_ID: example_map
+:END:
+#+BEGIN_SRC js
+const a =   cold("--1--2--|");
+const asub =     "^-------!";
+const expected = "--2--3--|";
+const result = a.map(s => `${Number(s) + 1}`);
+expectObservable(result).toBe(expected);
+expectSubscriptions(a.subscriptions).toBe(asub);
+#+END_SRC
+** concat
+:PROPERTIES:
+:CUSTOM_ID: example_concat
+:END:
+#+BEGIN_SRC js
+const a =   cold("--1--2--|");
+const b =   cold(        "--3--|");
+const asub =     "^-------!";
+const bsub =     "--------^----!";
+const expected = "--1--2----3--|";
+const result = a.concat(b);
+expectObservable(result).toBe(expected);
+expectSubscriptions(a.subscriptions).toBe(asub);
+expectSubscriptions(b.subscriptions).toBe(bsub);
+#+END_SRC
+** Hot Observables
+:PROPERTIES:
+:CUSTOM_ID: example_hot
+:END:
+#+BEGIN_SRC js
+const a =   cold("--1--2--|");
+const b =    hot("^----3----4--|");
+const asub =     "^-------!";
+const bsub =     "--------^----!";
+const expected = "--1--2----4--|";
+const result = a.concat(b);
+expectObservable(result).toBe(expected);
+expectSubscriptions(a.subscriptions).toBe(asub);
+expectSubscriptions(b.subscriptions).toBe(bsub);
+#+END_SRC
+** Synchronous Notification
+:PROPERTIES:
+:CUSTOM_ID: example_sync
+:END:
+#+BEGIN_SRC js
+const a =   cold("-1-----2----|");
+const b =   cold("-3-----4----|");
+const asub =     "^-----------!";
+const bsub =     "^-----------!";
+const expected = "-(13)--(24)-|";
+const result = a.merge(b);
+expectObservable(result).toBe(expected);
+expectSubscriptions(a.subscriptions).toBe(asub);
+expectSubscriptions(b.subscriptions).toBe(bsub);
+#+END_SRC
+** TODO example with time('--')
+* Limitations
+:PROPERTIES:
+:CUSTOM_ID: limitation
+:END:
+** Only AsyncScheduler
+:PROPERTIES:
+:CUSTOM_ID: limitation_only_async
+:END:
+You can't directly test RxJS code that consumes Promises
+** delay(0) forbidden
+:PROPERTIES:
+:CUSTOM_ID: limitation_delay0
+:END:
+You also can't currently assert delays of zero, even with AsyncScheduler, e.g. delay(0)
+** Synchronous Notification limitations
+:PROPERTIES:
+:CUSTOM_ID: limitation_sync
+:END:
+- each of the parenthesis-enclosed groups of values spans four actual frames
+- there must be a sufficient number of frames separating the values
+#+BEGIN_SRC js
+const a =   cold("-1-----2----|");
+const b =   cold("-3-----4----|");
+const asub =     "^-----------!";
+const bsub =     "^-----------!";
+const expected = "-(13)--(24)-|";
+const result = a.merge(b);
+expectObservable(result).toBe(expected);
+expectSubscriptions(a.subscriptions).toBe(asub);
+expectSubscriptions(b.subscriptions).toBe(bsub);
+#+END_SRC
+
+* Thank you
+:PROPERTIES:
+:CUSTOM_ID: thanks
+:END:
