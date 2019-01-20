@@ -208,7 +208,9 @@ But got:
 const a =   cold("--1--2--|");
 const asub =     "^-------!";
 const expected = "--2--3--|";
+
 const result = a.map(s => `${Number(s) + 1}`);
+
 expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);
 #+END_SRC
@@ -222,7 +224,9 @@ const b =   cold(        "--3--|");
 const asub =     "^-------!";
 const bsub =     "--------^----!";
 const expected = "--1--2----3--|";
+
 const result = a.concat(b);
+
 expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);
 expectSubscriptions(b.subscriptions).toBe(bsub);
@@ -237,7 +241,9 @@ const b =    hot("^----3----4--|");
 const asub =     "^-------!";
 const bsub =     "--------^----!";
 const expected = "--1--2----4--|";
+
 const result = a.concat(b);
+
 expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);
 expectSubscriptions(b.subscriptions).toBe(bsub);
@@ -273,7 +279,9 @@ const b =   cold("-3-----4----|");
 const asub =     "^-----------!";
 const bsub =     "^-----------!";
 const expected = "-(13)--(24)-|";
+
 const result = a.merge(b);
+
 expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);
 expectSubscriptions(b.subscriptions).toBe(bsub);
