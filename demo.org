@@ -24,8 +24,9 @@
 :CUSTOM_ID: agenda
 :END:
 - Marble diagrams
-- Marble syntax
+- Marble testing notation
 - Marble testing examples
+- Testing subsrciption time points
 - Limitations
 
 * Marble diagram
@@ -63,10 +64,13 @@ Box represents operator that transforms an Observable
 :END:
 Cross sign represents an error emitted by output Observable
 [[./images/diagram_error.png]]
-* Notation
+* Marble testing Notation
 :PROPERTIES:
 :CUSTOM_ID: notation
 :END:
+Leverage marble diagrams to construct Observables
+
+with just literal strings
 ** Marble Syntax
 :PROPERTIES:
 :CUSTOM_ID: marble_syntax
