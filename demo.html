@@ -28,7 +28,7 @@
 <body>
 <div class="reveal">
 <div class="slides">
-<section id="sec-title-slide" data-background="./images/title_bg.png"><h1 class="title">Marble Testing</h1><h2 class="author">Viktor Pyshnenko</h2><p class="date">Created: 2019-01-20 Вс 20:25</p>
+<section id="sec-title-slide" data-background="./images/title_bg.png"><h1 class="title">Marble Testing</h1><h2 class="author">Viktor Pyshnenko</h2><p class="date">Created: 2019-01-20 Вс 21:10</p>
 </section>
 
 
@@ -106,8 +106,11 @@ Cross sign represents an error emitted by output Observable
 '------#'
 
 // (alphanumeric) characters are values being emitted
-'---a--b--c--|'
-'---a--b--#'
+// On frame 2 emit a, on frame 5 emit b, and on frame 8, complete
+'--a--b--|'
+
+//  On frame 2 emit a, on frame 5 emit b, and on frame 8, error
+'--a--b--#'
 </code></pre>
 </div>
 </section>
@@ -227,13 +230,27 @@ But got:
 </section>
 </section>
 <section>
+<section id="slide-sec-subscriptions">
+<h2 id="subscriptions">Test subscriptions</h2>
+<p>
+It is possible to assert
+that a Observable  was subscribed/unsubscribed to at the correct point in time.
+</p>
+</section>
 <section id="slide-sec-subscriptions_notation">
-<h2 id="subscriptions_notation">Test subscriptions</h2>
+<h3 id="subscriptions_notation">Syntax</h3>
 <div class="org-src-container">
 
-<pre><code class="js" >// no subscription ever happened
+<pre><code class="js" >// '^' (caret) subscription point: 
+//     shows the point in time at which a subscription happen.
+
+// '!' (exclamation mark) unsubscription point:
+//     shows the point in time at which a subscription is unsubscribed.
+
+// no subscription ever happened
 '-----' 
-// a subscription happened after 2 "frames" of time passed, and the subscription was not unsubscribed
+// a subscription happened after 2 "frames" of time passed,
+//  and the subscription was not unsubscribed
 '--^--'
 // on frame 2 a subscription happened, and on frame 5 was unsubscribed
 '--^--!-'
@@ -290,6 +307,9 @@ const result = a.concat(b);
 expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);
 expectSubscriptions(b.subscriptions).toBe(bsub);
+
+// The hot observable’s 3 is emitted prior to subscription,
+// so it does not appear in the expected result
 </code></pre>
 </div>
 </section>

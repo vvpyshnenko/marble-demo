@@ -82,8 +82,11 @@ Cross sign represents an error emitted by output Observable
 '------#'
 
 // (alphanumeric) characters are values being emitted
-'---a--b--c--|'
-'---a--b--#'
+// On frame 2 emit a, on frame 5 emit b, and on frame 8, complete
+'--a--b--|'
+
+//  On frame 2 emit a, on frame 5 emit b, and on frame 8, error
+'--a--b--#'
 #+END_SRC
 ** Sync groupings
 :PROPERTIES:
@@ -188,12 +191,25 @@ But got:
 
 * Test subscriptions
 :PROPERTIES:
+:CUSTOM_ID: subscriptions
+:END:
+It is possible to assert
+that a Observable  was subscribed/unsubscribed to at the correct point in time.
+** Syntax
+:PROPERTIES:
 :CUSTOM_ID: subscriptions_notation
 :END:
 #+BEGIN_SRC js
+// '^' (caret) subscription point: 
+//     shows the point in time at which a subscription happen.
+
+// '!' (exclamation mark) unsubscription point:
+//     shows the point in time at which a subscription is unsubscribed.
+
 // no subscription ever happened
 '-----' 
-// a subscription happened after 2 "frames" of time passed, and the subscription was not unsubscribed
+// a subscription happened after 2 "frames" of time passed,
+//  and the subscription was not unsubscribed
 '--^--'
 // on frame 2 a subscription happened, and on frame 5 was unsubscribed
 '--^--!-'
@@ -247,6 +263,9 @@ const result = a.concat(b);
 expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);
 expectSubscriptions(b.subscriptions).toBe(bsub);
+
+// The hot observable’s 3 is emitted prior to subscription,
+// so it does not appear in the expected result
 #+END_SRC
 * Limitations
 :PROPERTIES:
