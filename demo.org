@@ -18,9 +18,6 @@
 #+REVEAL_EXTRA_CSS: ./local.css
 #+REVEAL_TITLE_SLIDE_BACKGROUND: ./images/title_bg.png
 
-[[http://melpa.org/#/ox-reveal][file:http://melpa.org/packages/ox-reveal-badge.svg]]
-[[http://www.gnu.org/licenses/gpl-3.0.html][http://img.shields.io/:license-gpl3-blue.svg]]
-
 
 * Agenda
 :PROPERTIES:
@@ -115,9 +112,97 @@ Cross sign represents an error emitted by output Observable
 :PROPERTIES:
 :CUSTOM_ID: examples
 :END:
-** map
+We can test our asynchronous RxJS code synchronously and deterministically
+** Map
 :PROPERTIES:
 :CUSTOM_ID: example_map
+:END:
+#+BEGIN_SRC js
+ describe('Map', () => {
+    it('should add "1" to each value emitted', () => {
+      const values = { a: 1, b: 2, c: 3, x: 2, y: 3, z: 4 };
+      const source   = cold('-a-b-c-|', values);
+      const expected = cold('-x-y-z-|', values);
+
+      const result = source.pipe(map(x => x+1));
+      expect(result).toBeObservable(expected);
+    });
+  })
+#+END_SRC
+** ConcatMap
+:PROPERTIES:
+:CUSTOM_ID: example_concatmap
+:END:
+#+BEGIN_SRC js
+  describe('ConcatMap', () => {
+    it('should maps values to inner observable and emits in order', () => {
+      const values = { a: 10, b: 30, x: 20, y: 40 };
+      const obs1     = cold('-a--------b------ab|', values);
+      const obs2     = cold('a-a-a|', values);
+      const expected = cold('-x-x-x----y-y-y--x-x-xy-y-y|', values);
+
+      const result = obs1.pipe(concatMap(x => obs2.pipe(map(y => x + y))));
+      expect(result).toBeObservable(expected);
+    });
+  });
+#+END_SRC
+** Delay
+:PROPERTIES:
+:CUSTOM_ID: example_delay
+:END:
+#+BEGIN_SRC js
+import {cold, hot, time} from 'jest-marbles';
+
+describe('Delay', () => {
+    it('should waits 2 frames before receive the value', () => {
+      const source = of('a').pipe(
+        delay(time('--')),
+      );
+      const expected = cold('--(a|)');
+
+      expect(source).toBeObservable(expected);
+    });
+  });
+#+END_SRC
+** When the test fails
+:PROPERTIES:
+:CUSTOM_ID: example_fail
+:END:
+#+BEGIN_SRC js
+it('Should merge two hot observables', () => {
+  const e1 = hot('----a--^--b-------c--|', {a: 0});
+  const e2 = hot('  ---d-^--e---------f-----|', {a: 0});
+  const expected = cold('---(be)----c-f-----|', {a: 0});
+
+  expect(e1.pipe(merge(e2))).toBeObservable(expected);
+});
+#+END_SRC
+Sample output when the test fails:
+#+BEGIN_SRC js
+// if change the expected result to '-d--(be)----c-f-----|'
+Expected notifications to be:
+  "-d--(be)----c-f-----|"
+But got:
+  "---(be)----c-f-----|"
+#+END_SRC
+
+* Test subscriptions
+:PROPERTIES:
+:CUSTOM_ID: subscriptions_notation
+:END:
+#+BEGIN_SRC js
+// no subscription ever happened
+'-----' 
+// a subscription happened after 2 "frames" of time passed, and the subscription was not unsubscribed
+'--^--'
+// on frame 2 a subscription happened, and on frame 5 was unsubscribed
+'--^--!-'
+// on 500 ms subscription happened and lasts for 1 second
+'500ms ^ 1s !'
+#+END_SRC
+** map
+:PROPERTIES:
+:CUSTOM_ID: subscriptions_map
 :END:
 #+BEGIN_SRC js
 const a =   cold("--1--2--|");
@@ -129,7 +214,7 @@ expectSubscriptions(a.subscriptions).toBe(asub);
 #+END_SRC
 ** concat
 :PROPERTIES:
-:CUSTOM_ID: example_concat
+:CUSTOM_ID: subscriptions_concat
 :END:
 #+BEGIN_SRC js
 const a =   cold("--1--2--|");
@@ -144,7 +229,7 @@ expectSubscriptions(b.subscriptions).toBe(bsub);
 #+END_SRC
 ** Hot Observables
 :PROPERTIES:
-:CUSTOM_ID: example_hot
+:CUSTOM_ID: subscriptions_hot
 :END:
 #+BEGIN_SRC js
 const a =   cold("--1--2--|");
@@ -157,36 +242,25 @@ expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);
 expectSubscriptions(b.subscriptions).toBe(bsub);
 #+END_SRC
-** Synchronous Notification
-:PROPERTIES:
-:CUSTOM_ID: example_sync
-:END:
-#+BEGIN_SRC js
-const a =   cold("-1-----2----|");
-const b =   cold("-3-----4----|");
-const asub =     "^-----------!";
-const bsub =     "^-----------!";
-const expected = "-(13)--(24)-|";
-const result = a.merge(b);
-expectObservable(result).toBe(expected);
-expectSubscriptions(a.subscriptions).toBe(asub);
-expectSubscriptions(b.subscriptions).toBe(bsub);
-#+END_SRC
-** TODO example with time('--')
 * Limitations
 :PROPERTIES:
 :CUSTOM_ID: limitation
 :END:
-** Only AsyncScheduler
+** Only Async
 :PROPERTIES:
 :CUSTOM_ID: limitation_only_async
 :END:
-You can't directly test RxJS code that consumes Promises
+At this time the TestScheduler can only be used to test code that uses timers, like delay/debounceTime/etc
 ** delay(0) forbidden
 :PROPERTIES:
 :CUSTOM_ID: limitation_delay0
 :END:
 You also can't currently assert delays of zero, even with AsyncScheduler, e.g. delay(0)
+** No Promises
+:PROPERTIES:
+:CUSTOM_ID: limitation_no_promises
+:END:
+ If the code consumes a Promise or does scheduling with AsapScheduler/AnimationFrameScheduler/etc it cannot be reliably tested 
 ** Synchronous Notification limitations
 :PROPERTIES:
 :CUSTOM_ID: limitation_sync
