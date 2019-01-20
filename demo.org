@@ -229,7 +229,7 @@ const a =   cold("--1--2--|");
 const asub =     "^-------!";
 const expected = "--2--3--|";
 
-const result = a.map(s => `${Number(s) + 1}`);
+const result = a.pipe(map(s => `${Number(s) + 1}`));
 
 expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);
@@ -245,7 +245,7 @@ const asub =     "^-------!";
 const bsub =     "--------^----!";
 const expected = "--1--2----3--|";
 
-const result = a.concat(b);
+const result = a.pipe(concat(b));
 
 expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);
@@ -262,7 +262,7 @@ const asub =     "^-------!";
 const bsub =     "--------^----!";
 const expected = "--1--2----4--|";
 
-const result = a.concat(b);
+const result = a.pipe(concat(b));
 
 expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);
@@ -303,7 +303,7 @@ const asub =     "^-----------!";
 const bsub =     "^-----------!";
 const expected = "-(13)--(24)-|";
 
-const result = a.merge(b);
+const result = a.pipe(merge(b));
 
 expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);

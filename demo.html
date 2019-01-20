@@ -28,7 +28,7 @@
 <body>
 <div class="reveal">
 <div class="slides">
-<section id="sec-title-slide" data-background="./images/title_bg.png"><h1 class="title">Marble Testing</h1><h2 class="author">Viktor Pyshnenko</h2><p class="date">Created: 2019-01-20 Вс 21:40</p>
+<section id="sec-title-slide" data-background="./images/title_bg.png"><h1 class="title">Marble Testing</h1><h2 class="author">Viktor Pyshnenko</h2><p class="date">Created: 2019-01-20 Вс 21:54</p>
 </section>
 
 
@@ -275,7 +275,7 @@ that a Observable  was subscribed/unsubscribed to at the correct point in time.
 const asub =     "^-------!";
 const expected = "--2--3--|";
 
-const result = a.map(s =&gt; `${Number(s) + 1}`);
+const result = a.pipe(map(s =&gt; `${Number(s) + 1}`));
 
 expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);
@@ -292,7 +292,7 @@ const asub =     "^-------!";
 const bsub =     "--------^----!";
 const expected = "--1--2----3--|";
 
-const result = a.concat(b);
+const result = a.pipe(concat(b));
 
 expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);
@@ -310,7 +310,7 @@ const asub =     "^-------!";
 const bsub =     "--------^----!";
 const expected = "--1--2----4--|";
 
-const result = a.concat(b);
+const result = a.pipe(concat(b));
 
 expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);
@@ -359,7 +359,7 @@ const asub =     "^-----------!";
 const bsub =     "^-----------!";
 const expected = "-(13)--(24)-|";
 
-const result = a.merge(b);
+const result = a.pipe(merge(b));
 
 expectObservable(result).toBe(expected);
 expectSubscriptions(a.subscriptions).toBe(asub);
